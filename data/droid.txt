@@ -1,0 +1,101 @@
+# -------------------------------------------------
+# Grain
+# -------------------------------------------------
+
+# GRAIN-PARAM-CLOCK - Clock Multipliyer
+[encoder]
+notch = 0.05
+mode = 2
+startvalue = 0
+color = 0.4 # Green
+negativecolor = 0.73 # Orange
+encoder = E1.1
+select = _MODE_SELECT_POS * 100 # --in
+selectat = 100
+output = _GRAIN_CTRL # --out
+
+# GRAIN-LOOP-CLK
+[switch]
+input1 = 0
+input2 = 0.0625
+input3 = 0.125
+input4 = 0.25
+input5 = 0.5
+input6 = _GRAIN_RANDOM
+input7 = 2
+input8 = 4
+input9 = 8
+input10 = 16
+input11 = _GRAIN_TRIG_OUT
+offset = _GRAIN_CTRL * -11 # --in
+output1 = _GRAIN_CTRL_DIV # --out
+
+[compare]
+input = _GRAIN_CTRL # --in
+compare = 0
+ifgreater = 1
+ifless = 2
+ifequal = 0
+output = _GRAIN_MODE # --out
+
+# GRAIN-CLK-LOOP
+[select]
+input = _GRAIN_CTRL_DIV # --in
+select = _GRAIN_MODE # --in
+selectat = 2
+output = _GRAIN_CLK_DIV # --out
+
+# GRAIN-CLK-GRANULAR
+[select]
+input = _GRAIN_CTRL # --in
+select = _GRAIN_MODE # --in
+selectat = 1
+output = _GRAIN_CLK_MULT # --out
+
+[clocktool]
+dutycycle = 0.1
+clock = _CLOCK # --in
+reset = _RESET # --in
+divide = _GRAIN_CLK_DIV # --in
+multiply = _GRAIN_CLK_MULT * 32 + 0 # --in
+delay = 0
+output = _GRAIN_TRIG # --out
+
+[bernoulli]
+input = _GRAIN_TRIG # --in
+distribution = _GRAIN_CTRL * 2 # --in Values over 1 and below 0 are ignored.
+output1 = _GRAIN_TRIG_MULT # --out
+
+[mixer]
+input1 = _GRAIN_TRIG_LOOP # --in
+input2 = _GRAIN_TRIG_GRANULAR # --in
+input3 = _GRAIN_TRIG
+output = _GRAIN_TRIG # --out
+
+[mixer]
+input1 = _GRAIN_TRIG2
+output = _GRAIN_TRIG2 # --out
+
+[cvlooper]
+gatein = _GRAIN_TRIG # --in
+cvin = _GRAIN_RANDOM # --in
+clock = _CLOCK * 0.5 # --in
+reset = _RESET # --in
+length = 16
+loopswitch = I3
+cvout = _GRAIN_CV_OUT # --out
+gateout = _GRAIN_TRIG_OUT # --out
+
+[random]
+clock = _GRAIN_TRIG # --in
+minimum = 0
+maximum = 1
+output = _GRAIN_RANDOM # --out
+
+[copy]
+input = _GRAIN_RANDOM
+output = O3
+
+[copy]
+input = _GRAIN_TRIG_OUT # --in
+output = O4

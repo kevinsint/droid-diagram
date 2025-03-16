@@ -1,0 +1,23 @@
+:root {
+    --diagram-width: 2000px;
+    --diagram-color: #252525;                /* Background color of the diagram */
+    --circuit-color: #383532;                /* Fill color for circuit boxes */
+    --circuit-border-color: #dac29b;         /* Border color for circuit boxes */
+    --circuit-label-color: #dac29b;          /* Text color for circuit labels */
+    --circuit-input-label-color: #00d7fe;    /* Text color for input labels */
+    --circuit-output-label-color: #ff7460;   /* Text color for output labels */
+    --cable-label-color: #383532;            /* Text color for cable labels */
+    --font-face: 'Verdana';                  /* Font family for all text */
+    --circuit-font-size: 48px;               /* Font size for circuit labels */
+    --pin-font-size: 36px;                   /* Font size for pin labels */
+    --cable-font-size: 20px;                 /* Font size for cable labels */
+    --circuit-width: 800px;                  /* Width of circuit boxes */
+    --circuit-height: 600px;                 /* Height of circuit boxes */
+    --circuit-gap: 400px;                    /* Gap between circuits */
+    --pin-gap: 50px;                         /* Gap between pins */
+    --cable-spacing: 30px;                   /* Spacing between cables */
+    --cable-width: 10px;                     /* Width of cables */
+    --lanes-offset: 100px;                   /* Offset for lanes */
+    --input-pin-label-offset: 10px;          /* Offset for input pin labels */
+    --output-pin-label-offset: 10px;         /* Offset for output pin labels */
+}

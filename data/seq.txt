@@ -1,0 +1,238 @@
+# -------------------------------------------------
+# SEQ
+# -------------------------------------------------
+
+# SEQ - Progression Input
+[copy]
+    input = I6
+    output = _RECORD_INPUT
+
+# SEQ - Progression Record Led
+[copy]
+    input = I5
+    output = R6
+
+# SEQ - Progression
+[logic]
+    input1 = _RECORD_INPUT
+    negated = _RECORD_INPUT_NOT
+
+# SEQ - Recorder Trigger
+#
+# When record gate is high, the play trigger is ignored. When turning record gate to low, the next play trigger will stop recording and start playing.
+[logic]
+    input1 = _CLOCK_BAR
+    input2 = _RECORD_INPUT_NOT
+    threshold = 0.1
+    and = _PROGRESSION_PLAY
+
+# SEQ-PARAM - Change selected parameter (merge buttons)
+[logic]
+    input1 = _EC1A_BTN
+    input2 = _EC1B_BTN
+    input3 = _EC1C_BTN
+    or = _EC1_BTN
+
+# SEQ-PARAM - Change selected parameter (length, notes, undefined).
+[button]
+    button = _EC1_BTN
+    states = 3
+    output = _SEQ_PARAM_SELECT
+
+# SEQ-PARAM-LENGTH - Sequence length.
+[encoder]
+    color = 0.2 # cyan
+    discrete = 10
+    encoder = E1.1
+    select = _MODE_SELECT_POS * 100 + _SEQ_PARAM_SELECT
+    selectat = 0
+    button = _EC1A_BTN
+    output = _EC1A
+
+# SEQ-PARAM-RANDOM
+[switch]
+    input1 = _RANDOM_01
+    input2 = _RANDOM_02
+    input3 = _RANDOM_03
+    input4 = _RANDOM_04
+    offset = _SEQ_PARAM_PATTERN
+    output1 = _SELECTED_RANDOM
+
+# SEQ-PARAM-LENGTH - Sequence lengths choices.
+[switch]
+    input1 = 2
+    input2 = 4
+    input3 = 8
+    input4 = 16
+    input5 = 32
+    input6 = 64
+    input7 = 24
+    input8 = 12
+    input9 = 6
+    input10 = 3
+    offset = _EC1A
+    output1 = _SEQ_LENGTH
+
+# SEQ-PARAM-SCALE
+[encoder]
+    color = 0.3 # magenta
+    discrete = 8
+    encoder = E1.1
+    select = _MODE_SELECT_POS * 100 + _SEQ_PARAM_SELECT
+    selectat = 1
+    button = _EC1B_BTN
+    output = _EC1B
+
+# SEQ-PARAM-PATTERN
+[encoder]
+    color = 0.4 # magenta
+    discrete = 4
+    encoder = E1.1
+    select = _MODE_SELECT_POS * 100 + _SEQ_PARAM_SELECT
+    selectat = 2
+    button = _EC1C_BTN
+    output = _SEQ_PARAM_PATTERN
+
+# SEQ-POWER - 2nd knob
+[encoder]
+    color = 0.2 # cyan
+    encoder = E1.2
+    select = _MODE_SELECT_POS * 100
+    selectat = 0
+#   button = _EC2A_BTN
+    output = _EC2A # 0..1
+
+# SEQ-POWER - Output - Encoder + CV Input 4
+[mixer]
+    input1 = _EC2A
+    input2 = I4
+    output = _POWER
+
+# SEQ-POWER - Output Inverted
+[copy]
+    input = -1 * _POWER + 1
+    output = _POWER_INV
+
+# SEQ-POWER - Rolls
+[compare]
+    compare = 0.9
+    else = 0
+    ifgreater = _POWER * 0.1
+    input = _POWER
+    output = _POWER_ROLLS
+
+# SEQ-POWER - Gate Length
+[crossfader]
+    fade = _POWER
+    input1 = 0.3
+    input2 = 0.5
+    input3 = 2
+    input4 = 1
+    input5 = 0.7
+    input6 = 0.5
+    input7 = 0.25
+    input8 = 0.1
+    output = _POWER_GATE
+
+# SEQ-POWER - Pitch Range
+[switch]
+    input1 = 1 * 0.1
+    input2 = 1 * 0.1
+    input3 = 1 * 0.1
+    input4 = 2 * 0.1
+    input5 = 2 * 0.1
+    input6 = 2 * 0.1
+    input7 = 2 * 0.1
+    input8 = 2 * 0.1
+    input9 = 3 * 0.1
+    input10 = 3 * 0.1
+    input11 = 2 * 0.1
+    input12 = 1 * 0.1
+    offset = _POWER * 10
+    output1 = _PITCH_RANGE
+
+# SEQ-DEPTH - 3rd knob
+[encoder]
+    color = 0.2 # cyan
+    encoder = E1.3
+    select = 0
+    selectat = _MODE_SELECT_POS * 100
+#   button = _EC3A_BTN
+    output = _EC3A
+
+# SEQ-DEPTH - Output
+[mixer]
+    input1 = _EC3A
+    output = _DEPTH
+
+# SEQ-DEPTH - Output 0..3 for Branches
+[math]
+    input1 = _DEPTH * 3
+    round = _DEPTH_BRANCHES
+
+# SEQ-CHAOS - 4th knob - Mode A
+[encoder]
+    color = 0.2 # cyan
+    encoder = E1.4
+    select = 0
+    selectat = _MODE_SELECT_POS_E4 * 100
+    button = _SEQ_CHAOS_BTN
+    output = _EC4A
+
+# SEQ-CHAOS - Mixer
+[mixer]
+    input1 = _EC4A
+    output = _CHAOS
+
+# SEQ-CHAOS - Ouput Inverted
+[copy]
+    input = -1 * _CHAOS + 1
+    output = _CHAOS_INV
+
+# SEQ - Progression
+[recorder]
+    clock = _CLOCK
+    cvin = I5
+    playbutton = _PROGRESSION_PLAY
+    recordbutton = _RECORD_INPUT
+    cvout = _PROGRESSION_OUT
+    recordled = R6
+
+# SEQ - Sequencer
+[algoquencer]
+    pattern = _SELECTED_RANDOM * 1000
+    activity = _POWER
+    branches = _DEPTH_BRANCHES
+    clock = _CLOCK
+    dejavu = _CHAOS_INV * 0.5 + 0.5 # Keep the random pattern repeating (like a Turing machine)
+    gatelength = _POWER_GATE
+    length = _SEQ_LENGTH # 2,4,8,16
+    morphs = _CHAOS
+    pitchhigh = _PITCH_RANGE
+    pitchlow = 0
+    reset = _RESET
+    rolls = _POWER_ROLLS
+    variation = _CHAOS * 0.5 # No additional variation yet
+    gate = _SEQ_GATE
+    pitch = _RAW_PITCH # Raw CV to be quantized
+
+# SEQ - Progression Pitch Mix
+[mixer]
+    input1 = _RAW_PITCH
+    input2 = _PROGRESSION_OUT * 0.2 - 0.2
+    output = _RAW_PITCH_MIX
+
+# SEQ - Output
+[copy]
+    input = _SEQ_GATE
+    output = O1
+
+# SEQ - Quantizer
+[minifonion]
+    degree = 7 # Minor
+    harmonicshift = _EC1B
+    input = _RAW_PITCH_MIX # Take raw CV from algoquencer
+    root = 0 # Root note D
+    trigger = _SEQ_GATE
+    output = O2 # Output quantized CV
+
