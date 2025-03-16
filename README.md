@@ -8,8 +8,6 @@ The patch is the ensemble all circuits definitions parameters and the cables con
 
 ### Circuits
 
-#### Circuit
-
 A circuit is a function in the patch.
 
 #### Pins
@@ -20,32 +18,32 @@ A circuit is a function in the patch.
 
 ### Cables
 
-#### Cable
-
-A cable represents a connection between an output pin and one or more input pins.
+A cable represents a connection between an source output pin and one or more target input pins.
 
 - An output pin can connect to one or more input pins of any circuit, including itself (self-patching).
 - Each cable has a unique name, denoted as `cableName`.
-- The signal flow must always follow the designated lane signal flow directions.
+- The cable follows the designated route, consisting of tracks and lanes.
 
 #### Signal flow
 
+- The signal flow, from output to input, follows the designated lane signal flow directions.
 The direction of signal flow is always from an output pin to an input pin.
+- The Possible directions are `UPWARD` and `DOWNWARD`.
 
-- Possible directions: `upward`, `downward`.
+#### Route
+
+The route refers to the specific lane and track a cable uses to connect pins.
 
 #### Lanes
 
-Lanes are the vertical segments of a cable that run between circuits.
+Lanes are the vertical segments of a route that run between circuits.
 
 - Signal flow is upward on lanes positioned to the left of the circuits.
 - Signal flow is downward on lanes positioned to the right of the circuits.
-- Shorter cables should use the lanes closest to the circuit.
-- Cables are be assigned to lanes without gaps, starting from the lanes nearest the circuit.
 
 #### Track
 
-A track is the horizontal segment of a cable that connects a circuit’s pins to the lanes.
+A track is the horizontal segment of a route that connects a circuit’s pins to the lanes.
 
 - A track can connect to one downward lane and one upward lane simultaneously.
 - Tracks are assigned only to pins connected by a cable.
@@ -53,12 +51,10 @@ A track is the horizontal segment of a cable that connects a circuit’s pins to
   - Output pins have their own tracks.
   - Input pins have their own tracks.
 - Tracks are assigned from nearest to farthest from the circuit:
-  - Input pin tracks: Assigned from right to left.
-  - Output pin tracks: Assigned from left to right.
+  - Input pin tracks: Assigned from right to left (need revision).
+  - Output pin tracks: Assigned from left to right (need revision).
 - Track assignment is independent of lane assignment.
-- Tracks are identified by `trackIndex`.
+- Tracks are identified by an index.
 
-#### Route
 
-The route refers to the specific lane and track a cable uses to connect pins.
 
