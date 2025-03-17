@@ -2,7 +2,14 @@
 
 Try it here : https://droid.kevinsint.live/
 
-#### Patch
+> I chose to go with modular because I like having physical access and clearly seeing the wiring between the modules. With the Droid, which works similarly, I missed being able to see the wiring. So, I created this small app to visualize the wiring diagram in the Droid. This helps with understanding and debugging.
+
+## Next to come
+
+- View cables attenuation and offet.
+- View parmeters on other pins.
+
+## Patch
 
 The patch is the ensemble all circuits definitions parameters and the cables connections.
 
