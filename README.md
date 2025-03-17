@@ -1,7 +1,5 @@
 # DROID Diagram
 
-
-
 #### Patch
 
 The patch is the ensemble all circuits definitions parameters and the cables connections.
