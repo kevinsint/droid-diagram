@@ -1,5 +1,5 @@
 :root {
-    --diagram-width: 2000px;
+    --diagram-width: 3000px;
     --diagram-color: #252525;                /* Background color of the diagram */
     --circuit-color: #383532;                /* Fill color for circuit boxes */
     --circuit-border-color: #dac29b;         /* Border color for circuit boxes */
