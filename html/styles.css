@@ -21,3 +21,10 @@
     --input-pin-label-offset: 10px;          /* Offset for input pin labels */
     --output-pin-label-offset: 10px;         /* Offset for output pin labels */
 }
+
+.diagram-wrapper {
+    position: relative;
+}
+#diagramCanvas {
+    width: 100%;
+}
