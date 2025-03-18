@@ -6,8 +6,6 @@ export default class Draw {
 
         this.diagram = diagram;
         this.ctx = ctx;
-        this.maxTracks = 1;
-        this.maxLanes = 1;
 
         this.safeFonts = [
             'Arial',

@@ -29,6 +29,10 @@ body {
     color: var(--circuit-label-color);
 }
 
+a {
+    color: var(--circuit-label-color);
+}
+
 header {
     display: flex;
     flex-direction: column;
@@ -36,6 +40,38 @@ header {
     align-items: center;
     padding: 50px;
 }
+
+footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+}
+
+footer p:after {
+    content: "|";
+    margin: 0 10px;
+}
+
+footer p:last-child:after {
+    content: "";
+    display: none;
+}
+
+.diagram-wrapper {
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.diagram-wrapper canvas {
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
 
 /* File input button styling */
 #patchFile {
@@ -82,15 +118,4 @@ header {
     margin-left: 0.5em;
 }
 
-.diagram-wrapper {
-    position: relative;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0;
-}
 
-.diagram-wrapper canvas {
-    width: 100%;
-    height: auto;
-    transition: transform 0.3s ease;
-}
