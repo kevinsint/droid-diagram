@@ -11,16 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        try {
-            const patchText = await file.text();
-            const patch = new Patch({specifications, patchText});
-            const diagram = new Diagram({patch});
-            const ctx = canvas.getContext('2d');
-            const draw = new Draw({diagram, ctx});
-            draw.render();
-        } catch (error) {
-            console.error('Error generating diagram:', error);
-            alert('Error generating diagram: ' + error.message);
-        }
+        const patchText = await file.text();
+        const patch = new Patch({specifications, patchText});
+        const diagram = new Diagram({patch});
+        const ctx = canvas.getContext('2d');
+        const draw = new Draw({diagram, ctx});
+        draw.render();
     });
 });

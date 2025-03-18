@@ -1,10 +1,13 @@
-import {calculateTotalHeight, calculateCircuitPositions} from './calculate.js';
+import {UPWARD, DOWNWARD} from "./const.js";
+import {calculateCircuitPositions} from './calculate.js';
 
 export default class Draw {
     constructor({diagram, ctx}) {
 
         this.diagram = diagram;
         this.ctx = ctx;
+        this.maxTracks = 1;
+        this.maxLanes = 1;
 
         this.safeFonts = [
             'Arial',
@@ -31,69 +34,61 @@ export default class Draw {
 
         // Store CSS variables in a settings object
         this.settings = {
-            diagramWidth: parseInt(styles.getPropertyValue('--diagram-width').trim()),
-            diagramColor: styles.getPropertyValue('--diagram-color').trim(),
-            circuitColor: styles.getPropertyValue('--circuit-color').trim(),
-            circuitBorderColor: styles.getPropertyValue('--circuit-border-color').trim(),
-            circuitLabelColor: styles.getPropertyValue('--circuit-label-color').trim(),
-            circuitInputLabelColor: styles.getPropertyValue('--circuit-input-label-color').trim(),
-            circuitOutputLabelColor: styles.getPropertyValue('--circuit-output-label-color').trim(),
-            cableLabelColor: styles.getPropertyValue('--cable-label-color').trim(),
-            fontFace: styles.getPropertyValue('--font-face').trim(),
-            circuitFontSize: parseInt(styles.getPropertyValue('--circuit-font-size'), 10),
-            pinFontSize: parseInt(styles.getPropertyValue('--pin-font-size'), 10),
+            baseCableSpace: parseInt(styles.getPropertyValue('--base-cable-space') || '100', 10), // New property
             cableFontSize: parseInt(styles.getPropertyValue('--cable-font-size'), 10),
-            circuitWidth: parseInt(styles.getPropertyValue('--circuit-width'), 10),
-            circuitHeight: parseInt(styles.getPropertyValue('--circuit-height'), 10),
-            circuitGap: parseInt(styles.getPropertyValue('--circuit-gap'), 10),
-            pinGap: parseInt(styles.getPropertyValue('--pin-gap'), 10),
+            cableLabelColor: styles.getPropertyValue('--cable-label-color').trim(),
             cableSpacing: parseInt(styles.getPropertyValue('--cable-spacing'), 10),
             cableWidth: parseInt(styles.getPropertyValue('--cable-width'), 10),
-            lanesOffset: parseInt(styles.getPropertyValue('--lanes-offset'), 10),
+            circuitBorderColor: styles.getPropertyValue('--circuit-border-color').trim(),
+            circuitColor: styles.getPropertyValue('--circuit-color').trim(),
+            circuitFontSize: parseInt(styles.getPropertyValue('--circuit-font-size'), 10),
+            circuitHeight: parseInt(styles.getPropertyValue('--circuit-height'), 10),
+            circuitInputLabelColor: styles.getPropertyValue('--circuit-input-label-color').trim(),
+            circuitLabelColor: styles.getPropertyValue('--circuit-label-color').trim(),
+            circuitOutputLabelColor: styles.getPropertyValue('--circuit-output-label-color').trim(),
+            circuitWidth: parseInt(styles.getPropertyValue('--circuit-width'), 10),
+            diagramColor: styles.getPropertyValue('--diagram-color').trim(),
+            diagramWidth: parseInt(styles.getPropertyValue('--diagram-width') || '2000', 10),
+            fontFace: styles.getPropertyValue('--font-face').trim(),
             inputPinLabelOffset: parseInt(styles.getPropertyValue('--input-pin-label-offset'), 10),
+            lanesOffset: parseInt(styles.getPropertyValue('--lanes-offset'), 10),
             outputPinLabelOffset: parseInt(styles.getPropertyValue('--output-pin-label-offset'), 10),
+            pinFontSize: parseInt(styles.getPropertyValue('--pin-font-size'), 10),
+            pinGap: parseInt(styles.getPropertyValue('--pin-gap'), 10),
+            diagramMargin: 200
         };
-
-        console.log("Settings:", this.settings);
     }
 
     render() {
         const {circuits, cables} = this.diagram;
-        if (!circuits?.length) {
-            throw new Error("No circuits provided");
-        }
+        if (!circuits?.length) throw new Error("No circuits provided");
 
-        const height = calculateTotalHeight({
+        const patchHeight = calculateCircuitPositions({
             circuits,
+            diagramWidth: this.settings.diagramWidth,
             circuitHeight: this.settings.circuitHeight,
-            circuitGap: this.settings.circuitGap
+            circuitWidth: this.settings.circuitWidth,
+            cableSpacing: this.settings.cableSpacing,
         });
 
-        // Set canvas size
+        const diagramHeight = patchHeight + this.settings.diagramMargin * 2;
+
+        // Draw canvas.
         this.ctx.canvas.width = this.settings.diagramWidth;
-        this.ctx.canvas.height = height;
+        this.ctx.canvas.height = diagramHeight;
 
-        // Draw diagram background
         this.ctx.fillStyle = this.settings.diagramColor;
-        this.ctx.fillRect(0, 0, this.settings.diagramWidth, height);
+        this.ctx.fillRect(0, 0, this.settings.diagramWidth, diagramHeight);
 
-        this.drawCircuits(this.ctx, circuits);
+        this.drawCircuits({ctx: this.ctx, circuits, margin: this.settings.diagramMargin});
         if (cables.length) {
             this.drawCables({ctx: this.ctx, circuits, cables});
         }
     }
 
 
-    drawCircuits(ctx, circuits) {
-
-        // Draw circuits.
-        calculateCircuitPositions({
-            circuits: circuits,
-            diagramWidth: this.settings.diagramWidth,
-            circuitHeight: this.settings.circuitHeight,
-            circuitGap: this.settings.circuitGap
-        });
-
+    drawCircuits({ctx, circuits}) {
+        // todo draw circuits then transpose for margins.
         circuits.forEach(circuit => {
             ctx.fillStyle = this.settings.circuitColor;
             ctx.fillRect(
@@ -121,8 +116,6 @@ export default class Draw {
             ctx.fillText(circuit.id, circuit.x, circuit.y);
             this.drawPins({ctx, circuit});
         });
-
-
     }
 
     drawPins({ctx, circuit}) {
@@ -209,20 +202,19 @@ export default class Draw {
         });
     }
 
+
     drawCables({ctx, circuits, cables}) {
 
         // Assign a unique color per cable name.
 
-        // const hue = (index * 60) % 360;
-        // cable.color = `hsl(${hue}, 70%, 50%)`;
         this.renderColors({cables});
+
+        const cableSpacing = this.settings.cableWidth + this.settings.cableSpacing;
+        const center = this.settings.diagramWidth / 2;
+        const width = this.settings.circuitWidth / 2 + cableSpacing;
 
         // First pass: Draw all cables
         cables.forEach(cable => {
-
-            const cableSpacing = this.settings.cableWidth + this.settings.cableSpacing;
-            const center = this.settings.diagramWidth / 2;
-            const width = this.settings.circuitWidth / 2 + cableSpacing;
 
             ctx.strokeStyle = cable.color;
             ctx.lineWidth = this.settings.cableWidth;
@@ -236,24 +228,23 @@ export default class Draw {
                 const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
 
                 // Draw the cable path.
-                ctx.beginPath();
+                this.drawCableShadow({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput});
+            }
 
-                const laneOffset = center + (this.settings.lanesOffset * target.flow) + (width * target.flow);
-                const laneX = laneOffset + target.lane * cableSpacing;
 
-                // Pin length.
-                const sourceOffset = cable.source.track * cableSpacing;
-                const targetOffset = target.track * cableSpacing;
+            // Draw each cable's parts from source to target.
+            for (const target of cable.targets) {
 
-                ctx.moveTo(sourceOutput.x, sourceOutput.y); // Start at source pin (output pin at bottom)
-                ctx.lineTo(sourceOutput.x, sourceOutput.y + sourceOffset); // Move DOWN from source pin
+                const sourceCircuit = circuits.find(c => c.id === cable.source.circuitId);
+                const targetCircuit = circuits.find(c => c.id === target.circuitId);
+                const sourceOutput = sourceCircuit.outputs.find(o => o.pinName === cable.source.pinName);
+                const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
 
-                ctx.lineTo(laneX, sourceOutput.y + sourceOffset); // Move to the lane
-                ctx.lineTo(laneX, targetInput.y - targetOffset); // Move along the lane to target height
-
-                ctx.lineTo(targetInput.x, targetInput.y - targetOffset); // Move to position above target pin
-                ctx.lineTo(targetInput.x, targetInput.y); // Connect to target pin (input pin at top)
-                ctx.stroke();
+                // Draw the cable path.
+                const {
+                    sourceOffset,
+                    targetOffset
+                } = this.drawCable({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput});
 
                 // Store label position for the cable at the source output
                 if (!cable.labelPositions) {
@@ -272,7 +263,8 @@ export default class Draw {
                     y: sourceOutput.y + sourceOffset,
                     label: cable.cableName,
                     color: cable.color,
-                    align: target.flow < 0 ? 'left' : 'right' // Align based on which side of circuit
+                    // Align text based on which side of circuit
+                    align: target.flow < 0 ? 'left' : 'right'
                 };
                 cable.labelPositions.push(sourceLabel);
 
@@ -288,10 +280,13 @@ export default class Draw {
                     y: targetInput.y - targetOffset,
                     label: cable.cableName,
                     color: cable.color,
-                    align: target.flow < 0 ? 'left' : 'right' // Align based on which side of circuit
+                    // Align based on which side of circuit
+                    align: target.flow < 0 ? 'left' : 'right'
                 };
                 cable.labelPositions.push(targetLabel);
             }
+
+
         });
 
         // Second pass: Draw labels
@@ -308,6 +303,55 @@ export default class Draw {
                     });
                 });
             }
+        });
+    }
+
+
+    drawCablePath({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput, isShadow = false}) {
+        const laneOffset = center + (this.settings.lanesOffset * target.flow) + (width * target.flow);
+        const laneX = laneOffset + target.lane * cableSpacing;
+
+        // Pin length.
+        const sourceOffset = cable.source.track * cableSpacing;
+        const targetOffset = target.track * cableSpacing;
+
+        // Begin drawing
+        ctx.beginPath();
+
+        if (isShadow) {
+            // Draw cable shadow
+            ctx.strokeStyle = this.settings.diagramColor; // Use diagram background color for shadow
+            ctx.lineWidth = this.settings.cableWidth + 8; // Make it thicker on each side
+        } else {
+            // Draw colored cable
+            ctx.strokeStyle = cable.color;
+            ctx.lineWidth = this.settings.cableWidth;
+        }
+
+        // Draw the path (same for both shadow and cable)
+        ctx.moveTo(sourceOutput.x, sourceOutput.y); // Start at source pin (output pin at bottom)
+        ctx.lineTo(sourceOutput.x, sourceOutput.y + sourceOffset); // Move DOWN from source pin
+        ctx.lineTo(laneX, sourceOutput.y + sourceOffset); // Move to the lane
+        ctx.lineTo(laneX, targetInput.y - targetOffset); // Move along the lane to target height
+        ctx.lineTo(targetInput.x, targetInput.y - targetOffset); // Move to position above target pin
+        ctx.lineTo(targetInput.x, targetInput.y); // Connect to target pin (input pin at top)
+        ctx.stroke();
+
+        return {sourceOffset, targetOffset};
+    }
+
+    // Wrapper functions to maintain backward compatibility
+    drawCableShadow({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput}) {
+        this.drawCablePath({
+            ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput,
+            isShadow: true
+        });
+    }
+
+    drawCable({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput}) {
+        return this.drawCablePath({
+            ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput,
+            isShadow: false
         });
     }
 

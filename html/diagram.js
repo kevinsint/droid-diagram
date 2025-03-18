@@ -21,7 +21,7 @@ export default class Diagram {
         // Step 4: Assign lanes to cables.
         this.assignLanes({cables});
         // Step 5: Assign tracks to pins.
-        this.assignTracks({cables});
+        this.assignTracks({circuits, cables});
 
         return {
             cables,
@@ -30,7 +30,7 @@ export default class Diagram {
         };
     }
 
-    collectCableConnections({cables, circuits}) {
+    collectCableConnections({circuits, cables}) {
         circuits.forEach((circuit, circuitIndex) => {
 
             // Process each circuit output pins (signal sources).
@@ -149,13 +149,11 @@ export default class Diagram {
                     }
                     target.lane = downwardLanes.size * DOWNWARD;
                 }
-
-                // console.log(`Cable: ${cable.cableName}.target[${target.pinName}] lane: ${target.lane}`);
             }
         });
     }
 
-    assignTracks({cables}) {
+    assignTracks({circuits, cables}) {
 
         const ins = {};
         const outs = {};
@@ -165,7 +163,6 @@ export default class Diagram {
         cables.forEach(cable => {
 
             const sourceId = `${cable.source.circuitId}.${cable.cableName}`;
-            // console.log("Source Id", sourceId);
 
             // Output Sources
             if (!outs[sourceId]) {
@@ -194,6 +191,12 @@ export default class Diagram {
                 const targetId = `${target.circuitId}.${cable.cableName}`;
                 target.track = ins[targetId];
             }
+        });
+
+        // Update the circuits with their total track counts
+        circuits.forEach(circuit => {
+            circuit.totalInputTracks = trackIn[circuit.id] ? trackIn[circuit.id] - 1 : 0;
+            circuit.totalOutputTracks = trackOut[circuit.id] ? trackOut[circuit.id] - 1 : 0;
         });
     }
 }

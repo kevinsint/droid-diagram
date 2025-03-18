@@ -1,40 +1,96 @@
 :root {
-    --diagram-width: 3000px;
-    --diagram-color: #252525; /* Background color of the diagram */
-    --circuit-color: #383532; /* Fill color for circuit boxes */
-    --circuit-border-color: #dac29b; /* Border color for circuit boxes */
-    --circuit-label-color: #dac29b; /* Text color for circuit labels */
-    --circuit-input-label-color: #00d7fe; /* Text color for input labels */
-    --circuit-output-label-color: #ff7460; /* Text color for output labels */
-    --cable-label-color: #383532; /* Text color for cable labels */
-    --font-face: 'Verdana'; /* Font family for all text */
-    --circuit-font-size: 48px; /* Font size for circuit labels */
-    --pin-font-size: 36px; /* Font size for pin labels */
     --cable-font-size: 20px; /* Font size for cable labels */
-    --circuit-width: 800px; /* Width of circuit boxes */
-    --circuit-height: 600px; /* Height of circuit boxes */
-    --circuit-gap: 400px; /* Gap between circuits */
-    --pin-gap: 50px; /* Gap between pins */
+    --cable-label-color: #383532; /* Text color for cable labels */
     --cable-spacing: 30px; /* Spacing between cables */
     --cable-width: 10px; /* Width of cables */
-    --lanes-offset: 100px; /* Offset for lanes */
+    --circuit-border-color: #dac29b; /* Border color for circuit boxes */
+    --circuit-color: #383532; /* Fill color for circuit boxes */
+    --circuit-font-size: 48px; /* Font size for circuit labels */
+    --circuit-height: 700px; /* Height of circuit boxes */
+    --circuit-input-label-color: #00d7fe; /* Text color for input labels */
+    --circuit-label-color: #dac29b; /* Text color for circuit labels */
+    --circuit-output-label-color: #ff7460; /* Text color for output labels */
+    --circuit-width: 800px; /* Width of circuit boxes */
+    --diagram-color: #252525; /* Background color of the diagram */
+    --diagram-width: 4000px;
+    --font-face: 'Verdana'; /* Font family for all text */
     --input-pin-label-offset: 10px; /* Offset for input pin labels */
+    --lanes-offset: 100px; /* Offset for lanes */
     --output-pin-label-offset: 10px; /* Offset for output pin labels */
+    --pin-font-size: 36px; /* Font size for pin labels */
+    --pin-gap: 50px; /* Gap between pins */
 }
 
 body {
     font-family: Helvetica, sans-serif;
     margin: 0;
     padding: 0;
+    background-color: var(--diagram-color);
+    color: var(--circuit-label-color);
+}
+
+header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+}
+
+/* File input button styling */
+#patchFile {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+#patchFile + label {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--diagram-color);
+    background-color: var(--circuit-label-color);
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#patchFile + label:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+#patchFile + label:active {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transform: translateY(1px);
+}
+
+#patchFile + label svg {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    fill: currentColor;
+    margin-right: 0.5em;
+}
+
+#patchFile + label .file-name {
+    margin-left: 0.5em;
 }
 
 .diagram-wrapper {
     position: relative;
-    max-width: 90vw;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0;
 }
 
-#diagramCanvas {
-    max-width: 90vw;
+.diagram-wrapper canvas {
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
 }
