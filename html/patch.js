@@ -85,10 +85,16 @@ export default class Patch {
     }
 
     isInputParameter(key, circuitType) {
+        if(!this.specifications?.[circuitType]) {
+            throw new Error(`No specifications found for circuit type ${circuitType}`);
+        }
         return this.specifications?.[circuitType]?.inputs?.[key] !== undefined;
     }
 
     isOutputParameter(key, circuitType) {
+        if(!this.specifications?.[circuitType]) {
+            throw new Error(`No specifications found for circuit type ${circuitType}`);
+        }
         return this.specifications?.[circuitType]?.outputs?.[key] !== undefined;
     }
 }

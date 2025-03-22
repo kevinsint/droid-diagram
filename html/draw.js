@@ -1,11 +1,9 @@
-import {UPWARD, DOWNWARD} from "./const.js";
-import {calculateCircuitPositions} from './calculate.js';
+import { calculateCircuitPositions } from './calculate.js';
 
 export default class Draw {
-    constructor({diagram, ctx}) {
-
+    constructor({ diagram, container }) {
         this.diagram = diagram;
-        this.ctx = ctx;
+        this.container = container;
 
         this.safeFonts = [
             'Arial',
@@ -17,7 +15,7 @@ export default class Draw {
             'Garamond',
             'Courier New',
             'Brush Script MT'
-        ]
+        ];
 
         this.hues = [
             '#f83932',
@@ -32,7 +30,7 @@ export default class Draw {
 
         // Store CSS variables in a settings object
         this.settings = {
-            baseCableSpace: parseInt(styles.getPropertyValue('--base-cable-space') || '100', 10), // New property
+            baseCableSpace: parseInt(styles.getPropertyValue('--base-cable-space') || '100', 10),
             cableFontSize: parseInt(styles.getPropertyValue('--cable-font-size'), 10),
             cableLabelColor: styles.getPropertyValue('--cable-label-color').trim(),
             cableSpacing: parseInt(styles.getPropertyValue('--cable-spacing'), 10),
@@ -58,7 +56,7 @@ export default class Draw {
     }
 
     render() {
-        const {circuits, cables} = this.diagram;
+        const { circuits, cables } = this.diagram;
         if (!circuits?.length) throw new Error("No circuits provided");
 
         const patchHeight = calculateCircuitPositions({
@@ -70,346 +68,290 @@ export default class Draw {
         });
 
         const diagramHeight = patchHeight + this.settings.diagramMargin * 2;
+        const scale = 1;
+        const scaledWidth = this.settings.diagramWidth * scale;
+        const scaledHeight = diagramHeight * scale;
 
-        // Draw canvas.
-        this.ctx.canvas.width = this.settings.diagramWidth;
-        this.ctx.canvas.height = diagramHeight;
-
-        this.ctx.fillStyle = this.settings.diagramColor;
-        this.ctx.fillRect(0, 0, this.settings.diagramWidth, diagramHeight);
-
-        this.drawCircuits({ctx: this.ctx, circuits, margin: this.settings.diagramMargin});
-        if (cables.length) {
-            this.drawCables({ctx: this.ctx, circuits, cables});
-        }
-    }
-
-
-    drawCircuits({ctx, circuits}) {
-        // todo draw circuits then transpose for margins.
-        circuits.forEach(circuit => {
-            ctx.fillStyle = this.settings.circuitColor;
-            ctx.fillRect(
-                circuit.x - this.settings.circuitWidth / 2,
-                circuit.y - this.settings.circuitHeight / 2,
-                this.settings.circuitWidth,
-                this.settings.circuitHeight
-            );
-
-            // Draw a rectangle border
-            ctx.strokeStyle = this.settings.circuitBorderColor;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(
-                circuit.x - this.settings.circuitWidth / 2,
-                circuit.y - this.settings.circuitHeight / 2,
-                this.settings.circuitWidth,
-                this.settings.circuitHeight
-            );
-
-            // Circuit Label
-            ctx.fillStyle = this.settings.circuitLabelColor;
-            ctx.font = this.getCircuitFont();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(circuit.id, circuit.x, circuit.y);
-            this.drawPins({ctx, circuit});
+        // Create Konva stage
+        const stage = new Konva.Stage({
+            container: this.container,
+            width: scaledWidth,
+            height: scaledHeight
         });
+
+        const layer = new Konva.Layer();
+        stage.add(layer);
+
+        // Draw background
+        const background = new Konva.Rect({
+            x: 0,
+            y: 0,
+            width: scaledWidth,
+            height: scaledHeight,
+            fill: this.settings.diagramColor
+        });
+        layer.add(background);
+
+        // Draw circuits
+        circuits.forEach(circuit => {
+            this.drawCircuit({ layer, circuit, scale });
+        });
+
+        // Draw cables
+        if (cables.length) {
+            this.drawCables({ layer, circuits, cables, scale });
+        }
+
+        layer.draw();
     }
 
-    drawPins({ctx, circuit}) {
-        ctx.font = this.getPinFont();
+    drawCircuit({ layer, circuit, scale }) {
+        // Circuit rectangle with border
+        const circuitRect = new Konva.Rect({
+            x: (circuit.x - this.settings.circuitWidth / 2) * scale,
+            y: (circuit.y - this.settings.circuitHeight / 2) * scale,
+            width: this.settings.circuitWidth * scale,
+            height: this.settings.circuitHeight * scale,
+            fill: this.settings.circuitColor,
+            stroke: this.settings.circuitBorderColor,
+            strokeWidth: 3 * scale
+        });
+        layer.add(circuitRect);
+
+        // Circuit label
+        const label = new Konva.Text({
+            text: circuit.id,
+            fontSize: this.settings.circuitFontSize * scale,
+            fontFamily: this.settings.fontFace,
+            fill: this.settings.circuitLabelColor
+        });
+        const textWidth = label.width();
+        const textHeight = label.height();
+        label.x((circuit.x * scale) - textWidth / 2);
+        label.y((circuit.y * scale) - textHeight / 2);
+        layer.add(label);
+
+        // Draw pins
         if (circuit.inputs.length) {
-            // set color
-            ctx.fillStyle = this.settings.circuitInputLabelColor;
             this.drawPinSet({
-                ctx,
+                layer,
                 circuit,
                 pins: circuit.inputs,
-                type: 'input'
+                type: 'input',
+                scale
             });
         }
-
         if (circuit.outputs.length) {
-            ctx.fillStyle = this.settings.circuitOutputLabelColor;
             this.drawPinSet({
-                ctx,
+                layer,
                 circuit,
                 pins: circuit.outputs,
-                type: 'output'
+                type: 'output',
+                scale
             });
         }
     }
 
-
-    drawPinSet({ctx, circuit, pins, type}) {
+    drawPinSet({ layer, circuit, pins, type, scale }) {
         const pinsWidth = (pins.length - 1) * this.settings.pinGap;
         let x = circuit.x - pinsWidth / 2;
-
-        let y = circuit.y - this.settings.circuitHeight / 2;
-        ctx.textAlign = 'right';
-        let labelOffset = this.settings.inputPinLabelOffset;
-
-        if (type === 'output') {
-            ctx.textAlign = 'left';
-            y = (circuit.y + this.settings.circuitHeight / 2);
-            labelOffset = this.settings.outputPinLabelOffset;
-        }
+        let y = type === 'input' ? circuit.y - this.settings.circuitHeight / 2 : circuit.y + this.settings.circuitHeight / 2;
+        const labelOffset = type === 'input' ? this.settings.inputPinLabelOffset : this.settings.outputPinLabelOffset;
 
         pins.forEach((pin, index) => {
-            // Store pin position and index
+            // Store pin position
             pin.x = x;
             pin.y = y;
             pin.index = index;
 
-            // Draw pin label
-            ctx.save();
-            ctx.translate(x, type === 'output' ? y - labelOffset : y + labelOffset);
-            ctx.rotate(-Math.PI / 2);
-            ctx.textBaseline = 'middle';
+            const pinGroup = new Konva.Group();
+            pinGroup.x(x * scale);
+            pinGroup.y((type === 'input' ? y + labelOffset : y - labelOffset) * scale);
+            pinGroup.rotation(-90);
 
-            // Draw pin name
-            ctx.fillText(pin.pinName, type === 'output' ? labelOffset : -labelOffset, 0);
+            const textX = (type === 'input' ? -labelOffset : labelOffset) * scale;
+            const pinText = new Konva.Text({
+                x: textX,
+                y: 0,
+                text: pin.pinName,
+                fontSize: this.settings.pinFontSize * scale,
+                fontFamily: this.settings.fontFace,
+                fill: type === 'input' ? this.settings.circuitInputLabelColor : this.settings.circuitOutputLabelColor
+            });
+            const textHeight = pinText.height();
+            pinText.y(-textHeight / 2);
+            pinGroup.add(pinText);
+            layer.add(pinGroup);
 
-            ctx.restore();
             x += this.settings.pinGap;
         });
     }
 
+    drawCables({ layer, circuits, cables, scale }) {
+        this.renderColors({ cables });
 
-    renderColors({cables}) {
-        // Get unique cable names
+        const cableSpacing = (this.settings.cableWidth + this.settings.cableSpacing) * scale;
+        const center = (this.settings.diagramWidth / 2) * scale;
+        const width = (this.settings.circuitWidth / 2 + cableSpacing) * scale;
+
+        // Draw shadows
+        cables.forEach(cable => {
+            cable.targets.forEach(target => {
+                const sourceCircuit = circuits.find(c => c.id === cable.source.circuitId);
+                const targetCircuit = circuits.find(c => c.id === target.circuitId);
+                const sourceOutput = sourceCircuit.outputs.find(o => o.pinName === cable.source.pinName);
+                const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
+
+                const laneOffset = center + (this.settings.lanesOffset * target.flow * scale) + (width * target.flow);
+                const laneX = laneOffset + target.lane * cableSpacing;
+                const sourceOffset = cable.source.track * cableSpacing;
+                const targetOffset = target.track * cableSpacing;
+
+                const points = [
+                    sourceOutput.x * scale, sourceOutput.y * scale,
+                    sourceOutput.x * scale, (sourceOutput.y + sourceOffset) * scale,
+                    laneX, (sourceOutput.y + sourceOffset) * scale,
+                    laneX, (targetInput.y - targetOffset) * scale,
+                    targetInput.x * scale, (targetInput.y - targetOffset) * scale,
+                    targetInput.x * scale, targetInput.y * scale
+                ];
+
+                const shadowLine = new Konva.Line({
+                    points,
+                    stroke: this.settings.diagramColor,
+                    strokeWidth: (this.settings.cableWidth + 8) * scale,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                });
+                layer.add(shadowLine);
+            });
+        });
+
+        // Draw cables and labels
+        cables.forEach(cable => {
+            cable.targets.forEach(target => {
+                const sourceCircuit = circuits.find(c => c.id === cable.source.circuitId);
+                const targetCircuit = circuits.find(c => c.id === target.circuitId);
+                const sourceOutput = sourceCircuit.outputs.find(o => o.pinName === cable.source.pinName);
+                const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
+
+                const laneOffset = center + (this.settings.lanesOffset * target.flow * scale) + (width * target.flow);
+                const laneX = laneOffset + target.lane * cableSpacing;
+                const sourceOffset = cable.source.track * cableSpacing;
+                const targetOffset = target.track * cableSpacing;
+
+                const points = [
+                    sourceOutput.x * scale, sourceOutput.y * scale,
+                    sourceOutput.x * scale, (sourceOutput.y + sourceOffset) * scale,
+                    laneX, (sourceOutput.y + sourceOffset) * scale,
+                    laneX, (targetInput.y - targetOffset) * scale,
+                    targetInput.x * scale, (targetInput.y - targetOffset) * scale,
+                    targetInput.x * scale, targetInput.y * scale
+                ];
+
+                const cableLine = new Konva.Line({
+                    points,
+                    stroke: cable.color,
+                    strokeWidth: this.settings.cableWidth * scale,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                });
+                layer.add(cableLine);
+
+                // Label positions
+                const sourceEdgeX = target.flow < 0 ?
+                    (sourceCircuit.x - this.settings.circuitWidth / 2 - 10) * scale :
+                    (sourceCircuit.x + this.settings.circuitWidth / 2 + 10) * scale;
+                const sourceLabelY = (sourceOutput.y + sourceOffset) * scale;
+
+                const targetEdgeX = target.flow < 0 ?
+                    (targetCircuit.x - this.settings.circuitWidth / 2 - 10) * scale :
+                    (targetCircuit.x + this.settings.circuitWidth / 2 + 10) * scale;
+                const targetLabelY = (targetInput.y - targetOffset) * scale;
+
+                // Draw labels
+                this.drawCableLabel({
+                    layer,
+                    x: sourceEdgeX,
+                    y: sourceLabelY,
+                    label: cable.cableName,
+                    color: cable.color,
+                    scale
+                });
+
+                this.drawCableLabel({
+                    layer,
+                    x: targetEdgeX,
+                    y: targetLabelY,
+                    label: cable.cableName,
+                    color: cable.color,
+                    scale
+                });
+            });
+        });
+    }
+
+    drawCableLabel({ layer, x, y, label, color, scale }) {
+        const tempText = new Konva.Text({
+            text: label,
+            fontSize: this.settings.cableFontSize * scale,
+            fontFamily: this.settings.fontFace,
+            fontStyle: 'bold'
+        });
+        const textWidth = tempText.width();
+        const textHeight = tempText.height();
+        const padding = 8 * scale;
+        const rectWidth = textWidth + padding * 8; // Matches original padding
+        const rectHeight = textHeight + padding * 2;
+        const cornerRadius = 20 * scale;
+
+        const labelGroup = new Konva.Group({
+            x: x,
+            y: y
+        });
+
+        const background = new Konva.Rect({
+            x: -rectWidth / 2,
+            y: -rectHeight / 2,
+            width: rectWidth,
+            height: rectHeight,
+            fill: color,
+            cornerRadius: cornerRadius
+        });
+        labelGroup.add(background);
+
+        const text = new Konva.Text({
+            x: -rectWidth / 2,
+            y: -rectHeight / 2,
+            width: rectWidth,
+            height: rectHeight,
+            text: label,
+            fontSize: this.settings.cableFontSize * scale,
+            fontFamily: this.settings.fontFace,
+            fontStyle: 'bold',
+            fill: this.settings.cableLabelColor,
+            align: 'center',
+            verticalAlign: 'middle'
+        });
+        labelGroup.add(text);
+
+        layer.add(labelGroup);
+    }
+
+    renderColors({ cables }) {
         const uniqueCableNames = [...new Set(cables.map(cable => cable.cableName))];
         const numColors = uniqueCableNames.length;
-
-        // Pick colors from the palette (this.hues)
         const baseColors = this.pickColors(this.hues, numColors);
-
-        // Map colors to cable names
         const cableColorMap = new Map();
         uniqueCableNames.forEach((name, index) => {
             const rgb = baseColors[index];
-            // Convert RGB to HSL string for canvas compatibility
             const hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
             const color = `hsl(${hsl.h * 360}, ${hsl.s * 100}%, ${hsl.l * 100}%)`;
             cableColorMap.set(name, color);
         });
-
-        // Apply colors to cables
         cables.forEach(cable => {
             cable.color = cableColorMap.get(cable.cableName);
         });
-    }
-
-
-    drawCables({ctx, circuits, cables}) {
-
-        // Assign a unique color per cable name.
-
-        this.renderColors({cables});
-
-        const cableSpacing = this.settings.cableWidth + this.settings.cableSpacing;
-        const center = this.settings.diagramWidth / 2;
-        const width = this.settings.circuitWidth / 2 + cableSpacing;
-
-        // First pass: Draw all cables
-        cables.forEach(cable => {
-
-            ctx.strokeStyle = cable.color;
-            ctx.lineWidth = this.settings.cableWidth;
-
-            // Draw each cable's parts from source to target.
-            for (const target of cable.targets) {
-
-                const sourceCircuit = circuits.find(c => c.id === cable.source.circuitId);
-                const targetCircuit = circuits.find(c => c.id === target.circuitId);
-                const sourceOutput = sourceCircuit.outputs.find(o => o.pinName === cable.source.pinName);
-                const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
-
-                // Draw the cable path.
-                this.drawCableShadow({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput});
-            }
-
-
-            // Draw each cable's parts from source to target.
-            for (const target of cable.targets) {
-
-                const sourceCircuit = circuits.find(c => c.id === cable.source.circuitId);
-                const targetCircuit = circuits.find(c => c.id === target.circuitId);
-                const sourceOutput = sourceCircuit.outputs.find(o => o.pinName === cable.source.pinName);
-                const targetInput = targetCircuit.inputs.find(i => i.pinName === target.pinName);
-
-                // Draw the cable path.
-                const {
-                    sourceOffset,
-                    targetOffset
-                } = this.drawCable({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput});
-
-                // Store label position for the cable at the source output
-                if (!cable.labelPositions) {
-                    cable.labelPositions = [];
-                }
-
-                // Calculate the label position for source
-                // If the lane is on the left side (negative flow), place label on left edge
-                // If the lane is on the right side (positive flow), place label on right edge
-                const sourceEdgeX = target.flow < 0 ?
-                    sourceCircuit.x - this.settings.circuitWidth / 2 - 10 :
-                    sourceCircuit.x + this.settings.circuitWidth / 2 + 10;
-
-                const sourceLabel = {
-                    x: sourceEdgeX,
-                    y: sourceOutput.y + sourceOffset,
-                    label: cable.cableName,
-                    color: cable.color,
-                    // Align text based on which side of circuit
-                    align: target.flow < 0 ? 'left' : 'right'
-                };
-                cable.labelPositions.push(sourceLabel);
-
-                // Calculate the label position for target
-                // If the lane is on the left side (negative flow), place label on left edge
-                // If the lane is on the right side (positive flow), place label on right edge
-                const targetEdgeX = target.flow < 0 ?
-                    targetCircuit.x - this.settings.circuitWidth / 2 - 10 :
-                    targetCircuit.x + this.settings.circuitWidth / 2 + 10;
-
-                const targetLabel = {
-                    x: targetEdgeX,
-                    y: targetInput.y - targetOffset,
-                    label: cable.cableName,
-                    color: cable.color,
-                    // Align based on which side of circuit
-                    align: target.flow < 0 ? 'left' : 'right'
-                };
-                cable.labelPositions.push(targetLabel);
-            }
-
-
-        });
-
-        // Second pass: Draw labels
-        cables.forEach(cable => {
-            if (cable.labelPositions && cable.labelPositions.length > 0) {
-                cable.labelPositions.forEach(pos => {
-                    ctx.font = this.getCableFont();
-                    this.drawCableLabel({
-                        ctx,
-                        x: pos.x,
-                        y: pos.y,
-                        label: pos.label,
-                        color: cable.color
-                    });
-                });
-            }
-        });
-    }
-
-
-    drawCablePath({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput, isShadow = false}) {
-        const laneOffset = center + (this.settings.lanesOffset * target.flow) + (width * target.flow);
-        const laneX = laneOffset + target.lane * cableSpacing;
-
-        // Pin length.
-        const sourceOffset = cable.source.track * cableSpacing;
-        const targetOffset = target.track * cableSpacing;
-
-        // Begin drawing
-        ctx.beginPath();
-
-        if (isShadow) {
-            // Draw cable shadow
-            ctx.strokeStyle = this.settings.diagramColor; // Use diagram background color for shadow
-            ctx.lineWidth = this.settings.cableWidth + 8; // Make it thicker on each side
-        } else {
-            // Draw colored cable
-            ctx.strokeStyle = cable.color;
-            ctx.lineWidth = this.settings.cableWidth;
-        }
-
-        // Draw the path (same for both shadow and cable)
-        ctx.moveTo(sourceOutput.x, sourceOutput.y); // Start at source pin (output pin at bottom)
-        ctx.lineTo(sourceOutput.x, sourceOutput.y + sourceOffset); // Move DOWN from source pin
-        ctx.lineTo(laneX, sourceOutput.y + sourceOffset); // Move to the lane
-        ctx.lineTo(laneX, targetInput.y - targetOffset); // Move along the lane to target height
-        ctx.lineTo(targetInput.x, targetInput.y - targetOffset); // Move to position above target pin
-        ctx.lineTo(targetInput.x, targetInput.y); // Connect to target pin (input pin at top)
-        ctx.stroke();
-
-        return {sourceOffset, targetOffset};
-    }
-
-    // Wrapper functions to maintain backward compatibility
-    drawCableShadow({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput}) {
-        this.drawCablePath({
-            ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput,
-            isShadow: true
-        });
-    }
-
-    drawCable({ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput}) {
-        return this.drawCablePath({
-            ctx, center, target, width, cableSpacing, cable, sourceOutput, targetInput,
-            isShadow: false
-        });
-    }
-
-
-    /**
-     * Draws a pill-shaped label with vertical text
-     * @param {CanvasRenderingContext2D} ctx - The canvas context
-     * @param {number} x - X coordinate for the label
-     * @param {number} y - Y coordinate for the label
-     * @param {string} text - Text to display in the label
-     * @param {string} color - Background color for the pill
-     */
-    drawCableLabel({ctx, x, y, label, color}) {
-        ctx.save();
-
-        // Translate to the position where we want to draw the label
-        ctx.translate(x, y);
-        ctx.textAlign = 'center';
-
-        // Calculate pill dimensions
-        const textMetrics = ctx.measureText(label);
-        const padding = 8;
-        const textHeight = this.settings.cableFontSize;
-        const cornerRadius = 20;
-        const rectWidth = textMetrics.width + padding * 8;
-        const rectHeight = textHeight + padding * 2;
-
-        // Draw rounded rectangle (pill shape), use cable color.
-        ctx.fillStyle = color;
-        this.drawPill({ctx, x: 0, y: 0, width: rectWidth, height: rectHeight, radius: cornerRadius});
-
-        // Draw the label in white
-        ctx.fillStyle = this.settings.cableLabelColor;
-        ctx.fillText(label, 0, 0);
-
-        ctx.restore();
-    }
-
-    /**
-     * Draws a pill shape (rounded rectangle) centered at the given coordinates
-     * @param {CanvasRenderingContext2D} ctx - The canvas context
-     * @param {number} x - Center X coordinate
-     * @param {number} y - Center Y coordinate
-     * @param {number} width - Width of the pill
-     * @param {number} height - Height of the pill
-     * @param {number} radius - Corner radius
-     */
-    drawPill({ctx, x, y, width, height, radius}) {
-        ctx.beginPath();
-        ctx.moveTo(x - width / 2 + radius, y - height / 2);
-        ctx.lineTo(x + width / 2 - radius, y - height / 2);
-        ctx.arcTo(x + width / 2, y - height / 2, x + width / 2, y - height / 2 + radius, radius);
-        ctx.lineTo(x + width / 2, y + height / 2 - radius);
-        ctx.arcTo(x + width / 2, y + height / 2, x + width / 2 - radius, y + height / 2, radius);
-        ctx.lineTo(x - width / 2 + radius, y + height / 2);
-        ctx.arcTo(x - width / 2, y + height / 2, x - width / 2, y + height / 2 - radius, radius);
-        ctx.lineTo(x - width / 2, y - height / 2 + radius);
-        ctx.arcTo(x - width / 2, y - height / 2, x - width / 2 + radius, y - height / 2, radius);
-        ctx.closePath();
-        ctx.fill();
     }
 
     getPinFont() {
@@ -425,105 +367,67 @@ export default class Draw {
     }
 
     pickColors(palette, numColors) {
-        // Handle edge cases
-        if (numColors <= 0) return [];
-        if (palette.length === 0) return [];
-
-        // Convert palette to HSL
+        if (numColors <= 0 || palette.length === 0) return [];
         const paletteHsl = palette.map(hex => this.hexToHsl(hex));
         const N = palette.length;
         const colors = [];
-
-        // Generate numColors evenly spaced across the palette
         for (let k = 0; k < numColors; k++) {
-            // Parameter t ranges from 0 to 1 across the palette
             const t = numColors === 1 ? 0 : k / (numColors - 1);
             const segment = Math.floor(t * (N - 1));
-
-            // If at or beyond the last color, use the last color
             if (segment >= N - 1) {
-                const {h, s, l} = paletteHsl[N - 1];
+                const { h, s, l } = paletteHsl[N - 1];
                 const rgb = this.hslToRgb(h / 360, s / 100, l / 100);
-                colors.push({r: rgb.r, g: rgb.g, b: rgb.b});
+                colors.push({ r: rgb.r, g: rgb.g, b: rgb.b });
             } else {
-                // Interpolate between segment and segment + 1
                 const local_t = t * (N - 1) - segment;
                 const hsl1 = paletteHsl[segment];
                 const hsl2 = paletteHsl[segment + 1];
-
-                // Hue interpolation with shortest path
                 let dh = hsl2.h - hsl1.h;
                 if (dh > 180) dh -= 360;
                 if (dh < -180) dh += 360;
                 let h = hsl1.h + local_t * dh;
-                h = (h % 360 + 360) % 360; // Normalize to [0, 360)
-
-                // Linear interpolation for saturation and lightness
+                h = (h % 360 + 360) % 360;
                 const s = hsl1.s + local_t * (hsl2.s - hsl1.s);
                 const l = hsl1.l + local_t * (hsl2.l - hsl1.l);
-
-                // Convert back to RGB
                 const rgb = this.hslToRgb(h / 360, s / 100, l / 100);
-                colors.push({r: rgb.r, g: rgb.g, b: rgb.b});
+                colors.push({ r: rgb.r, g: rgb.g, b: rgb.b });
             }
         }
-
         return colors;
     }
 
-    // Convert hex color to RGB
     hexToRgb(hex) {
-        // Remove # if present
         hex = hex.replace(/^#/, '');
-
-        // Parse the hex values
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
-
-        return {r, g, b};
+        return { r, g, b };
     }
 
-    // Convert RGB to HSL
     rgbToHsl(r, g, b) {
-        r /= 255;
-        g /= 255;
-        b /= 255;
-
+        r /= 255; g /= 255; b /= 255;
         const max = Math.max(r, g, b);
         const min = Math.min(r, g, b);
         let h, s, l = (max + min) / 2;
-
         if (max === min) {
-            h = s = 0; // achromatic
+            h = s = 0;
         } else {
             const d = max - min;
             s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
             switch (max) {
-                case r:
-                    h = (g - b) / d + (g < b ? 6 : 0);
-                    break;
-                case g:
-                    h = (b - r) / d + 2;
-                    break;
-                case b:
-                    h = (r - g) / d + 4;
-                    break;
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
             }
-
             h /= 6;
         }
-
-        return {h, s, l};
+        return { h, s, l };
     }
 
-    // Convert HSL to RGB
     hslToRgb(h, s, l) {
         let r, g, b;
-
         if (s === 0) {
-            r = g = b = l; // achromatic
+            r = g = b = l;
         } else {
             const hue2rgb = (p, q, t) => {
                 if (t < 0) t += 1;
@@ -533,31 +437,18 @@ export default class Draw {
                 if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
                 return p;
             };
-
             const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
             const p = 2 * l - q;
-
             r = hue2rgb(p, q, h + 1 / 3);
             g = hue2rgb(p, q, h);
             b = hue2rgb(p, q, h - 1 / 3);
         }
-
-        return {
-            r: Math.round(r * 255),
-            g: Math.round(g * 255),
-            b: Math.round(b * 255)
-        };
+        return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
     }
 
     hexToHsl(hex) {
         const rgb = this.hexToRgb(hex);
         const hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
-        return {
-            h: hsl.h * 360,  // Hue in degrees [0, 360]
-            s: hsl.s * 100,  // Saturation in percent [0, 100]
-            l: hsl.l * 100   // Lightness in percent [0, 100]
-        };
+        return { h: hsl.h * 360, s: hsl.s * 100, l: hsl.l * 100 };
     }
-
-
 }

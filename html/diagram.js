@@ -14,10 +14,13 @@ export default class Diagram {
 
         // Step 1: Collect all cable connections.
         this.collectCableConnections({circuits, cables});
+        // console.log({circuits, cables});
         // Step 2: Identify and remove broken cables.
         this.removeBrokenCables({cables, brokenCables});
+
         // Step 3: Categorize cables by signal flow direction.
         this.determineSignalFlow({circuits, cables});
+
         // Step 4: Assign lanes to cables.
         this.assignLanes({cables});
         // Step 5: Assign tracks to pins.
