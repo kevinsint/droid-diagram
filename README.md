@@ -2,40 +2,38 @@
 
 Try it here : https://droid.kevinsint.live/
 
-> I chose to go with modular because I like having physical access and clearly seeing the wiring between the modules. With the Droid, which works similarly, I missed being able to see the wiring. So, I created this small app to visualize the wiring diagram in the Droid. This helps with understanding and debugging.
+I chose to go with modular synthesizers because I enjoy having physical access to the components and being able to clearly see the wiring between modules. With the Droid, which operates similarly, I missed the ability to visualize the wiring. To address this, I created a small app to display the wiring diagram for the Droid. This tool aids in understanding and debugging.
 
-## Next to come
+### Upcoming Features
 
-- View cables attenuation and offet.
-- View parmeters on other pins.
+- View cable attenuation and offset.
+- View parameters on unwired pins.
 
-## Patch
+#### Patch
 
-The patch is the ensemble all circuits definitions parameters and the cables connections.
+The patch is the complete set of circuit definitions, parameters, and cable connections.
 
-### Circuits
+#### Circuits
 
-A circuit is a function in the patch.
+A circuit represents a function within the patch.
 
-#### Pins
+Pins
 
 - Input Pins: Located along the top edge of the circuit.
-
 - Output Pins: Positioned at the bottom edge of the circuit.
 
-### Cables
+#### Cables
 
-A cable represents a connection between an source output pin and one or more target input pins.
+A cable represents a connection between a source output pin and one or more target input pins.
 
-- An output pin can connect to one or more input pins of any circuit, including itself (self-patching).
-- Each cable has a unique name, denoted as `cableName`.
-- The cable follows the designated route, consisting of tracks and lanes.
+- An output pin can connect to one or more input pins on any circuit, including itself (self-patching).
+- Each cable has a unique name, denoted as cableName.
+- The cable follows a designated route, consisting of tracks and lanes.
 
-#### Signal flow
+#### Signal Flow
 
-- The signal flow, from output to input, follows the designated lane signal flow directions.
-The direction of signal flow is always from an output pin to an input pin.
-- The Possible directions are `UPWARD` and `DOWNWARD`.
+- Signal flow, from output to input, adheres to the designated lane signal flow directions. The direction is always from an output pin to an input pin.
+- Possible directions are UPWARD and DOWNWARD.
 
 #### Route
 
@@ -45,10 +43,10 @@ The route refers to the specific lane and track a cable uses to connect pins.
 
 Lanes are the vertical segments of a route that run between circuits.
 
-- Signal flow is upward on lanes positioned to the left of the circuits.
-- Signal flow is downward on lanes positioned to the right of the circuits.
+- Signal flow is upward in lanes positioned to the left of the circuits.
+- Signal flow is downward in lanes positioned to the right of the circuits.
 
-#### Track
+#### Tracks
 
 A track is the horizontal segment of a route that connects a circuit’s pins to the lanes.
 
@@ -58,10 +56,7 @@ A track is the horizontal segment of a route that connects a circuit’s pins to
   - Output pins have their own tracks.
   - Input pins have their own tracks.
 - Tracks are assigned from nearest to farthest from the circuit:
-  - Input pin tracks: Assigned from right to left (need revision).
-  - Output pin tracks: Assigned from left to right (need revision).
+  - Input pin tracks: Assigned from right to left (needs revision).
+  - Output pin tracks: Assigned from left to right (needs revision).
 - Track assignment is independent of lane assignment.
 - Tracks are identified by an index.
-
-
-
