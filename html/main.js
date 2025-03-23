@@ -3,6 +3,9 @@ import Patch from './patch.js';
 import Diagram from './diagram.js';
 import Draw from "./draw.js";
 
+/**
+ * v 1.1
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const patchFileInput = document.getElementById('patchFile');
 
