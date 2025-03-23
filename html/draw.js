@@ -3,18 +3,7 @@ export default class Draw {
         this.diagram = diagram;
         this.container = container;
 
-        this.safeFonts = [
-            'Arial',
-            'Verdana',
-            'Tahoma',
-            'Trebuchet MS',
-            'Times New Roman',
-            'Georgia',
-            'Garamond',
-            'Courier New',
-            'Brush Script MT'
-        ];
-
+        // Todo move to css.
         this.hues = [
             '#f83932',
             '#ffd22b',
