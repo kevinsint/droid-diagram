@@ -4,37 +4,22 @@ import {DOWNWARD, UPWARD} from "./const.js";
 export default class Diagram {
 
     constructor({patch}) {
-        return this.buildPatch({circuits: patch.circuits});
+        this.circuits = patch.circuits;
+        this.cables = [];
+        this.brokenCables = new Set();
+        this.specs = new Map();
+
+        this.collectCableConnections();
+        this.removeBrokenCables();
+        this.determineSignalFlow();
+        this.assignLanes();
+        this.assignTracks();
+        this.updateSpecs();
     }
 
-    buildPatch({circuits}) {
-        const cables = [];
-        // Cables without proper connections.
-        const brokenCables = new Set();
+    collectCableConnections() {
 
-        // Step 1: Collect all cable connections.
-        this.collectCableConnections({circuits, cables});
-        // console.log({circuits, cables});
-        // Step 2: Identify and remove broken cables.
-        this.removeBrokenCables({cables, brokenCables});
-
-        // Step 3: Categorize cables by signal flow direction.
-        this.determineSignalFlow({circuits, cables});
-
-        // Step 4: Assign lanes to cables.
-        this.assignLanes({cables});
-        // Step 5: Assign tracks to pins.
-        this.assignTracks({circuits, cables});
-
-        return {
-            cables,
-            circuits,
-            brokenCables: [...brokenCables]
-        };
-    }
-
-    collectCableConnections({circuits, cables}) {
-        circuits.forEach((circuit, circuitIndex) => {
+        this.circuits.forEach((circuit, circuitIndex) => {
 
             // Process each circuit output pins (signal sources).
             circuit.outputs.forEach((output) => {
@@ -42,14 +27,14 @@ export default class Diagram {
                 if (!output.cableName) return;
 
                 // Find existing cable or create a new one
-                let cable = cables.find(c => c.cableName === output.cableName);
+                let cable = this.cables.find(c => c.cableName === output.cableName);
                 if (!cable) {
                     cable = {
                         cableName: output.cableName,
                         source: {},
                         targets: []
                     };
-                    cables.push(cable);
+                    this.cables.push(cable);
                 }
 
                 // todo add error validation, can't have multiple output for a same cable.
@@ -66,7 +51,7 @@ export default class Diagram {
                 // not every input has a cable.
                 if (!input.cableName) return;
 
-                let cable = cables.find(c => c.cableName === input.cableName);
+                let cable = this.cables.find(c => c.cableName === input.cableName);
                 // add new cable.
                 if (!cable) {
                     cable = {
@@ -74,7 +59,7 @@ export default class Diagram {
                         source: {},
                         targets: []
                     };
-                    cables.push(cable);
+                    this.cables.push(cable);
                 }
 
                 // Append targets to cable.
@@ -87,32 +72,33 @@ export default class Diagram {
         });
     }
 
-    removeBrokenCables({cables, brokenCables}) {
+    removeBrokenCables() {
+
         // Use filter to create a new array of valid cables
         const validCables = [];
 
-        for (let i = 0; i < cables.length; i++) {
-            const cable = cables[i];
+        for (let i = 0; i < this.cables.length; i++) {
+            const cable = this.cables[i];
             // Check if source is missing required properties or if there are no targets
             if (!cable.source ||
                 Object.keys(cable.source).length === 0 ||
                 !cable.source.circuitId ||
                 !cable.targets.length) {
                 // Add cable name to brokenCables set
-                brokenCables.add(cable.cableName);
+                this.brokenCables.add(cable.cableName);
             } else {
                 validCables.push(cable);
             }
         }
 
         // Replace the original cables array with the filtered one
-        cables.length = 0;
-        cables.push(...validCables);
+        this.cables.length = 0;
+        this.cables.push(...validCables);
     }
 
 
-    determineSignalFlow({cables}) {
-        for (const cable of cables) {
+    determineSignalFlow() {
+        for (const cable of this.cables) {
             // Each target has its own signal flow direction.
             for (const target of cable.targets) {
                 target.flow = target.circuitIndex <= cable.source.circuitIndex ? UPWARD : DOWNWARD;
@@ -124,9 +110,9 @@ export default class Diagram {
         }
     }
 
-    assignLanes({cables}) {
+    assignLanes() {
         // Sort cables by their span, circuits distance.
-        cables.sort((a, b) => {
+        this.cables.sort((a, b) => {
             const spanA = a.indexRange.max - a.indexRange.min;
             const spanB = b.indexRange.max - b.indexRange.min;
             // Longer spans first.
@@ -136,7 +122,7 @@ export default class Diagram {
         const upwardLanes = new Set();
         const downwardLanes = new Set();
 
-        cables.forEach(cable => {
+        this.cables.forEach(cable => {
             for (const target of cable.targets) {
                 if (target.flow === UPWARD) {
                     // assign this cable name to the first free upward lane.
@@ -156,14 +142,14 @@ export default class Diagram {
         });
     }
 
-    assignTracks({circuits, cables}) {
+    assignTracks() {
 
         const ins = {};
         const outs = {};
         const trackIn = {};
         const trackOut = {};
 
-        cables.forEach(cable => {
+        this.cables.forEach(cable => {
 
             const sourceId = `${cable.source.circuitId}.${cable.cableName}`;
 
@@ -187,7 +173,7 @@ export default class Diagram {
         });
 
         // Now set those tracks to the pins of each cable.
-        cables.forEach(cable => {
+        this.cables.forEach(cable => {
             const sourceId = `${cable.source.circuitId}.${cable.cableName}`;
             cable.source.track = outs[sourceId];
             for (const target of cable.targets) {
@@ -197,10 +183,24 @@ export default class Diagram {
         });
 
         // Update the circuits with their total track counts
-        circuits.forEach(circuit => {
+        this.circuits.forEach(circuit => {
             circuit.totalInputTracks = trackIn[circuit.id] ? trackIn[circuit.id] - 1 : 0;
             circuit.totalOutputTracks = trackOut[circuit.id] ? trackOut[circuit.id] - 1 : 0;
         });
+    }
+
+    updateSpecs() {
+        this.specs.set('maxPins', this.specMaxPins());
+    }
+
+    specMaxPins() {
+        let maxPins = 0;
+        // Find larger circuit
+        this.circuits.forEach(circuit => {
+            maxPins = Math.max(maxPins, circuit.totalInputTracks);
+            maxPins = Math.max(maxPins, circuit.totalOutputTracks);
+        });
+        return maxPins;
     }
 }
 

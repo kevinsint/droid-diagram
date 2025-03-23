@@ -1,11 +1,12 @@
 :root {
-    --cable-font-size: 20px; /* Font size for cable labels */
+    --cable-font-size: 16px; /* Font size for cable labels */
     --cable-label-color: #383532; /* Text color for cable labels */
-    --cable-spacing: 30px; /* Spacing between cables */
+    --cable-spacing: 24px; /* Spacing between cables */
     --cable-width: 10px; /* Width of cables */
     --circuit-border-color: #dac29b; /* Border color for circuit boxes */
     --circuit-color: #383532; /* Fill color for circuit boxes */
     --circuit-font-size: 48px; /* Font size for circuit labels */
+    --circuit-description-font-size: 26px; /* Font size for circuit labels */
     --circuit-height: 700px; /* Height of circuit boxes */
     --circuit-input-label-color: #00d7fe; /* Text color for input labels */
     --circuit-label-color: #dac29b; /* Text color for circuit labels */
@@ -118,4 +119,27 @@ footer p:last-child:after {
     margin-left: 0.5em;
 }
 
+/* Ensure the diagram div always fills its parent */
+#diagram {
+    width: 100%;
+    height: 100%;
+}
 
+/* Styles for full-screen diagram mode */
+body.diagram-mode .diagram-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+}
+
+body.diagram-mode header,
+body.diagram-mode footer {
+    display: none;
+}
+
+body.diagram-mode {
+    overflow: hidden;
+}
