@@ -122,10 +122,11 @@ export default class Draw {
     // Function to add zooming functionality
     addZoomListeners(stage) {
         stage.on('wheel', (e) => {
-            e.evt.preventDefault(); // Prevent default scroll behavior
-            const scaleBy = 1.2; // Zoom speed (10% per scroll)
-            const oldScale = stage.scaleX(); // Current scale
-            const pointer = stage.getPointerPosition(); // Mouse position
+            e.evt.preventDefault();
+            // Zoom speed (20% per scroll)
+            const scaleBy = 1.2;
+            const oldScale = stage.scaleX();
+            const pointer = stage.getPointerPosition();
 
             // Calculate the point in the diagram under the mouse
             const mousePointTo = {
@@ -134,7 +135,7 @@ export default class Draw {
             };
 
             // Determine zoom direction (in or out)
-            const direction = e.evt.deltaY > 0 ? 1 : -1;
+            const direction = e.evt.deltaY > 0 ? -1 : 1;
             const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
             // Calculate minScale dynamically based on current stage and diagram size
